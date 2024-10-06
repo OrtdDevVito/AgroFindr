@@ -179,6 +179,36 @@
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 1000;
         }
+        .loading-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1002;
+            text-align: center;
+        }
+        .dark-theme .loading-popup {
+            background-color: #2d3748;
+            color: #e2e8f0;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -199,6 +229,11 @@
     </div>
     <div id="overlay" class="overlay" style="display: none;"></div>
 
+    <div id="loading-popup" class="loading-popup">
+        <div class="loading-spinner"></div>
+        <p>Loading location data...</p>
+    </div>
+
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
@@ -212,6 +247,7 @@
         var currentMarker = null;
         var messageBox = document.getElementById('messageBox');
         var nasaDataBox = document.getElementById('nasaData');
+        var loadingPopup = document.getElementById('loading-popup');
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
@@ -250,6 +286,9 @@
         L.control.currentLocation({ position: 'bottomleft' }).addTo(map);
 
         function fetchNASAData(lat, lon) {
+            // Show loading popup
+            loadingPopup.style.display = 'block';
+
             // NASA POWER API endpoint
             const nasaAPIUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR,T2M,RH2M,GWETPROF,GWETROOT,GWETTOP,WS2M,ALLSKY_SFC_SW_DWN&community=AG&longitude=${lon}&latitude=${lat}&start=20230101&end=20230101&format=JSON`;
 
@@ -297,14 +336,6 @@
                                 ${soilMoisture.toFixed(1)}%
                             </div>
                             <div class="data-item">
-                                <strong>Wind Speed</strong>
-                                ${windSpeed.toFixed(1)} m/s
-                            </div>
-                            <div class="data-item">
-                                <strong>Solar Radiation</strong>
-                                ${solarRadiation.toFixed(1)} kWh/m²/day
-                            </div>
-                            <div class="data-item">
                                 <strong>Estimated Evapotranspiration</strong>
                                 ${evapotranspiration.toFixed(2)} mm/day
                             </div>
@@ -318,10 +349,15 @@
                         <h4>Recommended Crops</h4>
                         ${recommendedCrops}
                     `;
+
+                    // Hide loading popup
+                    loadingPopup.style.display = 'none';
                 })
                 .catch(error => {
                     console.error('Error fetching NASA data:', error);
                     nasaDataBox.innerHTML = '<p>Error fetching NASA data. Please try again later.</p>';
+                    // Hide loading popup
+                    loadingPopup.style.display = 'none';
                 });
         }
 
