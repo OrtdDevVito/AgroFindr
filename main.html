@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroFindr - Interactive World Map with NASA Data</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f5f9;
+            color: #333;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-theme {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #1e3a8a;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .dark-theme h1 {
+            color: #63b3ed;
+        }
+        #map {
+            height: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #messageBox {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #4a5568;
+            text-align: center;
+            padding: 10px;
+            background-color: #e2e8f0;
+            border-radius: 5px;
+        }
+        .dark-theme #messageBox {
+            background-color: #2d3748;
+            color: #e2e8f0;
+        }
+        #nasaData {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .dark-theme #nasaData {
+            background-color: #2d3748;
+        }
+        .leaflet-control-geocoder {
+            top: 10px;
+            right: 10px;
+        }
+        h3, h4 {
+            color: #2c5282;
+            margin-top: 20px;
+        }
+        .dark-theme h3, .dark-theme h4 {
+            color: #63b3ed;
+        }
+        p {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        .dark-theme p {
+            color: #e2e8f0;
+        }
+        .custom-button {
+            background-color: #4a5568;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        .custom-button:hover {
+            background-color: #2d3748;
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        li {
+            margin-bottom: 5px;
+            padding: 5px;
+            background-color: #f7fafc;
+            border-radius: 3px;
+        }
+        .dark-theme li {
+            background-color: #4a5568;
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .data-item {
+            background-color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .dark-theme .data-item {
+            background-color: #4a5568;
+        }
+        .data-item strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c5282;
+        }
+        .dark-theme .data-item strong {
+            color: #63b3ed;
+        }
+        #theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background-color: #4a5568;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        #theme-toggle:hover {
+            background-color: #2d3748;
+        }
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            max-width: 80%;
+            text-align: center;
+        }
+        .dark-theme .popup {
+            background-color: #2d3748;
+            color: #e2e8f0;
+        }
+        .popup-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AgroFindr</h1>
+        <div id="map"></div>
+        <div id="messageBox"></div>
+        <div id="nasaData"></div>
+    </div>
+    
+    <button id="theme-toggle">Toggle Dark Theme</button>
+
+    <div id="popup" class="popup" style="display: none;">
+        <span class="popup-close">&times;</span>
+        <h2>Welcome to AgroFindr!</h2>
+        <p>Use the search button to find specific locations and view their agricultural data.</p>
+        <p>Click on "My Current Location" to see information about your current location.</p>
+    </div>
+    <div id="overlay" class="overlay" style="display: none;"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script>
+        var map = L.map('map', {
+            center: [20, 0],
+            zoom: 3,
+            minZoom: 3,
+            maxBounds: [[-90, -180], [90, 180]],
+            maxBoundsViscosity: 1.0
+        });
+        var currentMarker = null;
+        var messageBox = document.getElementById('messageBox');
+        var nasaDataBox = document.getElementById('nasaData');
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+        }).addTo(map);
+
+        // Add search control with Nominatim geocoder
+        var geocoder = L.Control.geocoder({
+            defaultMarkGeocode: false,
+            geocoder: L.Control.Geocoder.nominatim()
+        }).on('markgeocode', function(e) {
+            var bbox = e.geocode.bbox;
+            var poly = L.polygon([
+                bbox.getSouthEast(),
+                bbox.getNorthEast(),
+                bbox.getNorthWest(),
+                bbox.getSouthWest()
+            ]).addTo(map);
+            map.fitBounds(poly.getBounds());
+            onLocationSelect(e.geocode.center, e.geocode.name);
+        }).addTo(map);
+
+        // Add custom "My Current Location" button
+        L.Control.CurrentLocation = L.Control.extend({
+            onAdd: function(map) {
+                var btn = L.DomUtil.create('button', 'custom-button');
+                btn.innerHTML = 'My Current Location';
+                btn.onclick = function() {
+                    map.locate({setView: true, maxZoom: 16});
+                };
+                return btn;
+            }
+        });
+        L.control.currentLocation = function(opts) {
+            return new L.Control.CurrentLocation(opts);
+        }
+        L.control.currentLocation({ position: 'bottomleft' }).addTo(map);
+
+        function fetchNASAData(lat, lon) {
+            // NASA POWER API endpoint
+            const nasaAPIUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR,T2M,RH2M,GWETPROF,GWETROOT,GWETTOP,WS2M,ALLSKY_SFC_SW_DWN&community=AG&longitude=${lon}&latitude=${lat}&start=20230101&end=20230101&format=JSON`;
+
+            fetch(nasaAPIUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const properties = data.properties;
+                    const parameter = properties.parameter;
+
+                    // Extract the latest data
+                    const precipitation = parameter.PRECTOTCORR['20230101'];
+                    const temperature = parameter.T2M['20230101'];
+                    const humidity = parameter.RH2M['20230101'];
+                    const soilMoisture = parameter.GWETPROF['20230101'];
+                    const windSpeed = parameter.WS2M['20230101'];
+                    const solarRadiation = parameter.ALLSKY_SFC_SW_DWN['20230101'];
+
+                    // Calculate evapotranspiration (simplified Penman-Monteith equation)
+                    const evapotranspiration = calculateEvapotranspiration(temperature, humidity, windSpeed, solarRadiation);
+
+                    // Get recommended crops
+                    const recommendedCrops = getRecommendedCrops(temperature, precipitation, soilMoisture);
+
+                    // Get climate type
+                    const climateType = getClimateType(temperature, precipitation);
+
+                    // Display NASA data
+                    nasaDataBox.innerHTML = `
+                        <h3>NASA Earth Data for Selected Location</h3>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <strong>Precipitation</strong>
+                                ${precipitation.toFixed(2)} mm/day
+                            </div>
+                            <div class="data-item">
+                                <strong>Temperature</strong>
+                                ${temperature.toFixed(1)}°C
+                            </div>
+                            <div class="data-item">
+                                <strong>Relative Humidity</strong>
+                                ${humidity.toFixed(1)}%
+                            </div>
+                            <div class="data-item">
+                                <strong>Soil Moisture</strong>
+                                ${soilMoisture.toFixed(1)}%
+                            </div>
+                            <div class="data-item">
+                                <strong>Estimated Evapotranspiration</strong>
+                                ${evapotranspiration.toFixed(2)} mm/day
+                            </div>
+                            <div class="data-item">
+                                <strong>Climate Type</strong>
+                                ${climateType}
+                            </div>
+                        </div>
+                        <h4>Irrigation Guide</h4>
+                        ${getIrrigationGuide(precipitation, soilMoisture, evapotranspiration)}
+                        <h4>Recommended Crops</h4>
+                        ${recommendedCrops}
+                    `;
+                })
+                .catch(error => {
+                    console.error('Error fetching NASA data:', error);
+                    nasaDataBox.innerHTML = '<p>Error fetching NASA data. Please try again later.</p>';
+                });
+        }
+
+        function calculateEvapotranspiration(temperature, humidity, windSpeed, solarRadiation) {
+            // Simplified Penman-Monteith equation
+            const latentHeatVaporization = 2.45; // MJ/kg
+            const psychrometricConstant = 0.067; // kPa/°C
+            const saturationVaporPressure = 0.6108 * Math.exp((17.27 * temperature) / (temperature + 237.3));
+            const actualVaporPressure = saturationVaporPressure * (humidity / 100);
+            const vaporPressureDeficit = saturationVaporPressure - actualVaporPressure;
+            
+            const netRadiation = 0.77 * solarRadiation - 40; // Simplified net radiation calculation
+            
+            const numerator = 0.408 * netRadiation + psychrometricConstant * (900 / (temperature + 273)) * windSpeed * vaporPressureDeficit;
+            const denominator = 1 + psychrometricConstant * (1 + 0.34 * windSpeed);
+            
+            return numerator / denominator;
+        }
+
+        function getIrrigationGuide(precipitation, soilMoisture, evapotranspiration) {
+            let guide = "<p>";
+            
+            if (precipitation < 1 && soilMoisture < 30) {
+                guide += `Immediate irrigation recommended. Soil moisture is critically low (${soilMoisture.toFixed(1)}%) and there's little recent precipitation (${precipitation.toFixed(2)} mm/day). `;
+                guide += `Consider applying 20-30 mm of water immediately, followed by 10-15 mm every 2-3 days until soil moisture improves. Monitor closely as evapotranspiration is ${evapotranspiration.toFixed(2)} mm/day.</p>`;
+            } else if (precipitation < 3 && soilMoisture < 50) {
+                guide += `Consider irrigation in the next few days if no rain is forecasted. Current soil moisture (${soilMoisture.toFixed(1)}%) is below optimal levels. `;
+                guide += `With evapotranspiration at ${evapotranspiration.toFixed(2)} mm/day, plan to apply 15-20 mm of water every 3-4 days to maintain adequate soil moisture.</p>`;
+            } else {
+                guide += `Irrigation may not be necessary at this time. Soil moisture (${soilMoisture.toFixed(1)}%) is adequate, and recent precipitation (${precipitation.toFixed(2)} mm/day) has been sufficient. `;
+                guide += `However, with evapotranspiration at ${evapotranspiration.toFixed(2)} mm/day, continue to monitor conditions closely. Consider light irrigation of 5-10 mm if no rainfall occurs in the next 5-7 days.</p>`;
+            }
+            
+            guide += "<p>Remember to adjust these recommendations based on specific crop needs, growth stage, and local weather forecasts. Early morning irrigation is generally most effective to minimize water loss through evaporation.</p>";
+            
+            return guide;
+        }
+
+        function getRecommendedCrops(temperature, precipitation, soilMoisture) {
+            let crops = "<ul>";
+            const cropList = {
+                tropical: ["Banana", "Pineapple", "Mango", "Papaya", "Coconut", "Sugarcane", "Cacao", "Coffee", "Rubber", "Oil Palm"],
+                subtropical: ["Citrus fruits", "Avocado", "Olive", "Fig", "Pomegranate", "Kiwi", "Loquat", "Persimmon", "Macadamia nut", "Pecan"],
+                temperate: ["Apple", "Pear", "Cherry", "Plum", "Peach", "Grape", "Strawberry", "Raspberry", "Blueberry", "Blackberry"],
+                arid: ["Date palm", "Jojoba", "Aloe vera", "Prickly pear", "Pomegranate", "Pistachio", "Olive", "Agave", "Mesquite", "Tamarind"],
+                mediterranean: ["Olive", "Grape", "Fig", "Almond", "Citrus fruits", "Pomegranate", "Artichoke", "Fennel", "Rosemary", "Thyme"],
+                coolTemperate: ["Wheat", "Barley", "Oats", "Rye", "Potato", "Sugar beet", "Rapeseed", "Flax", "Peas", "Lentils"],
+                warmTemperate: ["Corn (Maize)", "Soybeans", "Cotton", "Sunflower", "Sorghum", "Millet", "Peanuts", "Tobacco", "Sweet potato", "Sesame"],
+                humid: ["Rice", "Tea", "Jute", "Bamboo", "Taro", "Cassava", "Yam", "Ginger", "Turmeric", "Cardamom"]
+            };
+
+            let selectedCrops = [];
+
+            if (temperature > 25 && precipitation > 1500 && soilMoisture > 60) {
+                selectedCrops = cropList.tropical;
+            } else if (temperature > 20 && temperature <= 25 && precipitation > 800 && soilMoisture > 50) {
+                selectedCrops = cropList.subtropical;
+            } else if (temperature > 10 && temperature <= 20 && precipitation > 500 && soilMoisture > 40) {
+                selectedCrops = cropList.temperate;
+            } else if (temperature > 20 && precipitation < 250 && soilMoisture < 30) {
+                selectedCrops = cropList.arid;
+            } else if (temperature > 15 && temperature <= 20 && precipitation > 400 && precipitation <= 700 && soilMoisture > 30) {
+                selectedCrops = cropList.mediterranean;
+            } else if (temperature <= 10 && precipitation > 300 && soilMoisture > 40) {
+                selectedCrops = cropList.coolTemperate;
+            } else if (temperature > 20 && temperature <= 25 && precipitation > 500 && precipitation <= 1000 && soilMoisture > 40) {
+                selectedCrops = cropList.warmTemperate;
+            } else if (temperature > 20 && precipitation > 1000 && soilMoisture > 70) {
+                selectedCrops = cropList.humid;
+            }
+
+            if (selectedCrops.length > 0) {
+                crops += selectedCrops.map(crop => `<li>${crop}</li>`).join('');
+            } else {
+                crops += "<li>Consider consulting a local agricultural expert for crop recommendations suited to these specific conditions.</li>";
+            }
+
+            crops += "</ul>";
+            crops += "<p>Note: These recommendations are based on general climate conditions. Local factors such as soil type, pests, and market demand should also be considered when choosing crops.</p>";
+
+            return crops;
+        }
+
+        function getClimateType(temperature, precipitation) {
+            if (temperature > 18 && precipitation > 1500) {
+                return "Tropical";
+            } else if (temperature > 18 && precipitation > 500 && precipitation <= 1500) {
+                return "Subtropical";
+            } else if (temperature > 10 && temperature <= 18 && precipitation > 500) {
+                return "Temperate";
+            } else if (temperature > 18 && precipitation < 250) {
+                return "Arid";
+            } else if (temperature > 15 && temperature <= 18 && precipitation > 400 && precipitation <= 700) {
+                return "Mediterranean";
+            } else if (temperature <= 10 && precipitation > 300) {
+                return "Cool Temperate";
+            } else if (temperature > 18 && temperature <= 25 && precipitation > 500 && precipitation <= 1000) {
+                return "Warm Temperate";
+            } else if (temperature > 18 && precipitation > 1000) {
+                return "Humid Subtropical";
+            } else {
+                return "Mixed/Other";
+            }
+        }
+
+        function onLocationSelect(latlng, placeName) {
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+
+            currentMarker = L.marker(latlng).addTo(map)
+                .bindPopup(placeName)
+                .openPopup();
+
+            messageBox.innerHTML = `<strong>Location selected:</strong> ${placeName}`;
+            fetchNASAData(latlng.lat, latlng.lng);
+        }
+
+        map.on('locationfound', function(e) {
+            onLocationSelect(e.latlng, "Your Current Location");
+        });
+
+        // Dark theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-theme');
+            themeToggle.textContent = body.classList.contains('dark-theme') ? 'Toggle Light Theme' : 'Toggle Dark Theme';
+        });
+
+        // Show popup on page load
+        window.onload = function() {
+            document.getElementById('popup').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        // Close popup when clicking the close button or overlay
+        document.querySelector('.popup-close').addEventListener('click', closePopup);
+        document.getElementById('overlay').addEventListener('click', closePopup);
+
+        function closePopup() {
+            document.getElementById('popup').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

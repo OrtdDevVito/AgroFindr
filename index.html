@@ -1,0 +1,78 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smooth Scroll Website</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            font-family: 'Rubik', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+            color: white;
+            scroll-behavior: smooth;
+        }
+        .section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            position: relative;
+        }
+        #section1, #section2, #section3 {
+            background-color: transparent;
+        }
+        h1 { font-size: 3rem; margin-bottom: 1rem; }
+        p { font-size: 1.2rem; max-width: 600px; margin-bottom: 1.5rem; }
+        .next-section {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
+            text-decoration: none; /* Removed underline */
+        }
+        .next-section:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="section" id="section1">
+        <div>
+            <h1>Welcome to Our Smooth Scroll Website</h1>
+            <p>This is the hero section. Add a striking headline and a brief introduction to your website here.</p>
+            <a href="#section2" class="next-section">Next Section</a> <!-- Changed text and removed underline -->
+        </div>
+    </div>
+
+    <div class="section" id="section2">
+        <div>
+            <h1>Our Services</h1>
+            <p>This section could showcase your main services or products. Use engaging visuals and concise descriptions.</p>
+            <a href="#section3" class="next-section">Next Section</a> <!-- Changed text and removed underline -->
+        </div>
+    </div>
+
+    <div class="section" id="section3">
+        <div>
+            <h1>Contact Us</h1>
+            <p>The final section could include a contact form, social media links, or a call-to-action to engage your visitors.</p>
+            <a href="#section1" class="next-section">Back to Top</a> <!-- Changed text and removed underline -->
+        </div>
+    </div>
+</body>
+</html>
