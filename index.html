@@ -147,6 +147,7 @@
     </section>
     <script>
         let isPenultimateButtonClicked = false;
+        let lastButton;
 
         document.querySelectorAll('.scroll-button').forEach((button, index, buttons) => {
             button.addEventListener('click', function () {
@@ -160,21 +161,29 @@
                 // Check if this is the penultimate button
                 if (index === buttons.length - 2) {
                     isPenultimateButtonClicked = true;
+                    lastButton = buttons[buttons.length - 1];
                 }
             });
         });
 
         // Add event listener for mouse movement
         document.addEventListener('mousemove', function(e) {
-            if (isPenultimateButtonClicked) {
-                const maxDistance = Math.sqrt(Math.pow(window.innerWidth, 2) + Math.pow(window.innerHeight, 2));
-                const distance = Math.sqrt(Math.pow(e.clientX - window.innerWidth / 2, 2) + Math.pow(e.clientY - window.innerHeight / 2, 2));
-                const percentage = 1 - (distance / maxDistance);
+            if (isPenultimateButtonClicked && lastButton) {
+                const rect = lastButton.getBoundingClientRect();
+                const buttonCenterX = rect.left + rect.width / 2;
+                const buttonCenterY = rect.top + rect.height / 2;
+                
+                const distance = Math.sqrt(Math.pow(e.clientX - buttonCenterX, 2) + Math.pow(e.clientY - buttonCenterY, 2));
+                const maxDistance = Math.sqrt(Math.pow(window.innerWidth, 2) + Math.pow(window.innerHeight, 2)) / 2;
+                const percentage = 1 - Math.min(distance / maxDistance, 1);
                 
                 // Interpolate between dark gray and green
-                const r = Math.round(18 + (0 - 18) * percentage);
-                const g = Math.round(24 + (128 - 24) * percentage);
-                const b = Math.round(27 + (0 - 27) * percentage);
+                const startColor = [18, 24, 27]; // rgb(18 24 27)
+                const endColor = [34, 197, 94]; // rgb(34 197 94) - green-500 from the color list
+                
+                const r = Math.round(startColor[0] + (endColor[0] - startColor[0]) * percentage);
+                const g = Math.round(startColor[1] + (endColor[1] - startColor[1]) * percentage);
+                const b = Math.round(startColor[2] + (endColor[2] - startColor[2]) * percentage);
                 
                 document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
             } else {
